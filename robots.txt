@@ -1,0 +1,15 @@
+# robots.txt for streatwear.store
+# Last updated: 2026-09-20
+
+# Allow all search engines
+User-agent: *
+Allow: /
+
+# Block any admin or private paths (future use)
+Disallow: /admin/
+Disallow: /private/
+Disallow: /.env
+Disallow: /config/
+
+# Sitemap location
+Sitemap: https://streatwear.store/sitemap.xml
