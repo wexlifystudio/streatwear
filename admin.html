@@ -159,6 +159,46 @@ input, select, textarea{ font-family:inherit; }
 .chat-thread-mobile{ font-size:12px; margin-top:3px; }
 .chat-thread-mobile a{ color:var(--blue); text-decoration:none; font-family:'IBM Plex Mono', monospace; }
 .chat-thread-mobile a:hover{ text-decoration:underline; }
+.chat-thread-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.chat-thread-head{ gap:10px; }
+.chat-status-pill{ display:inline-block; margin-left:8px; padding:2px 8px; border-radius:5px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; vertical-align:middle; }
+.chat-status-pill.open{ background:#E3F5E9; color:#1E7A3D; }
+.chat-status-pill.closed{ background:#EAEAEA; color:#555; }
+
+/* ---------- CHAT PDF EXPORT (rendered off-screen, never visible) ---------- */
+.pdf-stage{ position:fixed; left:-12000px; top:0; z-index:-1; }
+.pdf-page{ width:794px; height:1123px; background:#F5F3EE; position:relative; overflow:hidden; font-family:'Inter',sans-serif; color:#0B0B0D; }
+.pdf-page .pdf-inner{ padding:40px 48px 0; }
+.pdf-band{ background:linear-gradient(135deg,#0B0B0D 0%,#1c1c22 60%,#2a0f0e 100%); color:#F5F3EE; padding:34px 48px 30px; position:relative; }
+.pdf-band::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:6px; background:linear-gradient(90deg,#E8352E 0%,#E8352E 55%,#F2C230 55%,#F2C230 78%,#1C3F94 78%); }
+.pdf-brand{ display:flex; align-items:center; gap:14px; }
+.pdf-mark{ width:48px; height:48px; border-radius:11px; background:linear-gradient(155deg,#E8352E,#B8231D); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:20px; color:#fff; }
+.pdf-brand-name{ font-family:'Anton',sans-serif; font-size:26px; letter-spacing:.02em; }
+.pdf-title{ font-family:'Anton',sans-serif; font-size:34px; text-transform:uppercase; margin-top:22px; letter-spacing:.01em; }
+.pdf-title span{ color:#E8352E; }
+.pdf-sub{ font-size:13px; color:#B9B9B9; margin-top:6px; }
+.pdf-info{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:26px 48px 8px; }
+.pdf-info-card{ background:#fff; border-radius:12px; padding:14px 16px; border-left:5px solid #E8352E; box-shadow:0 6px 18px -10px rgba(0,0,0,0.25); }
+.pdf-info-card.blue{ border-left-color:#1C3F94; }
+.pdf-info-card.gold{ border-left-color:#F2C230; }
+.pdf-info-card.ink{ border-left-color:#0B0B0D; }
+.pdf-info-label{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#8A8A8A; margin-bottom:4px; }
+.pdf-info-value{ font-size:15px; font-weight:700; word-break:break-word; }
+.pdf-section-label{ font-family:'Anton',sans-serif; font-size:16px; text-transform:uppercase; margin:22px 48px 4px; color:#0B0B0D; display:flex; align-items:center; gap:10px; }
+.pdf-section-label::after{ content:''; flex:1; height:2px; background:#E8352E; opacity:.35; }
+.pdf-msg{ display:flex; flex-direction:column; margin-bottom:14px; }
+.pdf-msg.customer{ align-items:flex-start; }
+.pdf-msg.admin{ align-items:flex-end; }
+.pdf-meta{ font-size:10.5px; font-weight:700; color:#8A8A8A; margin-bottom:4px; letter-spacing:.02em; }
+.pdf-msg.customer .pdf-meta b{ color:#1C3F94; }
+.pdf-msg.admin .pdf-meta b{ color:#B8231D; }
+.pdf-bubble{ max-width:74%; padding:11px 15px; border-radius:14px; font-size:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+.pdf-msg.customer .pdf-bubble{ background:#fff; color:#0B0B0D; border:1.5px solid #DAD6CB; border-bottom-left-radius:4px; }
+.pdf-msg.admin .pdf-bubble{ background:linear-gradient(155deg,#E8352E,#B8231D); color:#fff; border-bottom-right-radius:4px; }
+.pdf-daysep{ text-align:center; margin:6px 0 14px; }
+.pdf-daysep span{ display:inline-block; background:#0B0B0D; color:#F5F3EE; font-size:10.5px; font-weight:700; padding:4px 12px; border-radius:20px; letter-spacing:.04em; }
+.pdf-foot{ position:absolute; left:0; right:0; bottom:0; height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 48px; background:#0B0B0D; color:#B9B9B9; font-size:11px; }
+.pdf-foot b{ color:#F2C230; font-weight:700; }
 .chat-thread-body{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
 .ct-msg{ max-width:70%; padding:9px 13px; border-radius:12px; font-size:13.5px; line-height:1.4; }
 .ct-msg.customer{ align-self:flex-start; background:var(--off-2); border-bottom-left-radius:3px; }
@@ -243,7 +283,10 @@ input, select, textarea{ font-family:inherit; }
               <strong id="chatThreadName"></strong>
               <div id="chatThreadMobile" class="chat-thread-mobile" style="display:none;"></div>
             </div>
-            <button class="btn btn-outline btn-sm" id="chatCloseSessionBtn">Mark Closed</button>
+            <div class="chat-thread-actions">
+              <button class="btn btn-secondary btn-sm" id="chatExportPdfBtn">Export PDF</button>
+              <button class="btn btn-outline btn-sm" id="chatCloseSessionBtn">Mark Closed</button>
+            </div>
           </div>
           <div class="chat-thread-body" id="chatThreadBody"></div>
           <div class="chat-thread-foot">
@@ -1567,20 +1610,42 @@ let activeChatSessionId = null;
 let chatThreadChannel = null;
 
 // Short notification "ding" generated on the fly — no external audio file needed.
+// Mobile browsers only allow audio after a user tap, so one shared AudioContext
+// is created and unlocked on the admin's first tap anywhere in the panel.
+let chatAudioCtx = null;
+function getChatAudioCtx(){
+  if(!chatAudioCtx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    chatAudioCtx = new Ctx();
+  }
+  return chatAudioCtx;
+}
+function unlockChatAudio(){
+  const ctx = getChatAudioCtx();
+  if(ctx && ctx.state === 'suspended') ctx.resume();
+}
+document.addEventListener('click', unlockChatAudio, { passive:true });
+document.addEventListener('touchstart', unlockChatAudio, { passive:true });
+
 function playChatDing(){
   try{
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.setValueAtTime(1175, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.35);
+    const ctx = getChatAudioCtx();
+    if(!ctx) return;
+    if(ctx.state === 'suspended') ctx.resume();
+    const t = ctx.currentTime;
+    [[880, 0], [1175, 0.12]].forEach(([freq, delay])=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + delay);
+      gain.gain.setValueAtTime(0.0001, t + delay);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + delay + 0.35);
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.4);
+    });
   } catch(e){ /* audio not available, ignore */ }
 }
 
@@ -1618,6 +1683,7 @@ async function loadChatSessions(){
   const previewBySession = {};
   (lastMsgs || []).forEach(m => { if(!previewBySession[m.session_id]) previewBySession[m.session_id] = m; });
 
+  sessions.forEach(s => { chatNameCache[s.id] = s.customer_name || 'Visitor'; });
   list.innerHTML = sessions.map(s => {
     const unread = unreadBySession[s.id] || 0;
     const preview = previewBySession[s.id];
@@ -1644,6 +1710,7 @@ async function openChatThread(sessionId, name, mobile){
   if(mobile){ mobileEl.innerHTML = `<a href="tel:${esc(mobile)}">${esc(mobile)}</a>`; mobileEl.style.display = 'block'; }
   else{ mobileEl.style.display = 'none'; }
   document.querySelectorAll('.chat-session-item').forEach(el=> el.classList.toggle('active', el.dataset.session === sessionId));
+  refreshChatStatusUI(sessionId);
 
   await loadChatThreadMessages(sessionId);
   await sb.from('chat_messages').update({ is_read:true }).eq('session_id', sessionId).eq('sender','customer');
@@ -1691,12 +1758,184 @@ async function sendChatReply(){
 document.getElementById('chatReplySendBtn').addEventListener('click', sendChatReply);
 document.getElementById('chatReplyInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendChatReply(); });
 
+let activeChatStatus = 'open';
+
+async function refreshChatStatusUI(sessionId){
+  const { data } = await sb.from('chat_sessions').select('status').eq('id', sessionId).maybeSingle();
+  if(sessionId !== activeChatSessionId) return;
+  activeChatStatus = (data && data.status) || 'open';
+  const nameEl = document.getElementById('chatThreadName');
+  const old = nameEl.querySelector('.chat-status-pill');
+  if(old) old.remove();
+  const pill = document.createElement('span');
+  pill.className = 'chat-status-pill ' + (activeChatStatus === 'closed' ? 'closed' : 'open');
+  pill.textContent = activeChatStatus === 'closed' ? 'Closed' : 'Open';
+  nameEl.appendChild(pill);
+  document.getElementById('chatCloseSessionBtn').textContent = activeChatStatus === 'closed' ? 'Reopen' : 'Mark Closed';
+}
+
 document.getElementById('chatCloseSessionBtn').addEventListener('click', async ()=>{
   if(!activeChatSessionId) return;
-  await sb.from('chat_sessions').update({ status:'closed' }).eq('id', activeChatSessionId);
-  showToast('Conversation marked closed');
+  const nextStatus = activeChatStatus === 'closed' ? 'open' : 'closed';
+  const { error } = await sb.from('chat_sessions').update({ status: nextStatus }).eq('id', activeChatSessionId);
+  if(error){ showToast('Update failed: ' + error.message, true); return; }
+  showToast(nextStatus === 'closed' ? 'Conversation closed' : 'Conversation reopened');
+  refreshChatStatusUI(activeChatSessionId);
   loadChatSessions();
 });
+
+// ============================================
+// LIVE CHAT — PDF EXPORT (high quality, colorful)
+// ============================================
+function loadScriptOnce(src){
+  return new Promise((resolve, reject)=>{
+    if(document.querySelector('script[data-src="' + src + '"]')) return resolve();
+    const sc = document.createElement('script');
+    sc.src = src; sc.async = true; sc.dataset.src = src;
+    sc.onload = ()=> resolve();
+    sc.onerror = ()=> reject(new Error('Failed to load ' + src));
+    document.head.appendChild(sc);
+  });
+}
+
+function pdfFmtTime(iso){
+  return new Date(iso).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+function pdfFmtDay(iso){
+  return new Date(iso).toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+}
+function pdfFmtFull(iso){
+  return iso ? (pdfFmtDay(iso) + ', ' + pdfFmtTime(iso)) : '—';
+}
+
+async function exportChatPdf(){
+  if(!activeChatSessionId) return;
+  const btn = document.getElementById('chatExportPdfBtn');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing...';
+  let stage = null;
+  try{
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    if(document.fonts && document.fonts.ready) await document.fonts.ready;
+
+    const sid = activeChatSessionId;
+    const [{ data: session }, { data: msgs }] = await Promise.all([
+      sb.from('chat_sessions').select('*').eq('id', sid).maybeSingle(),
+      sb.from('chat_messages').select('*').eq('session_id', sid).order('created_at', { ascending:true })
+    ]);
+    if(!session){ showToast('Conversation not found', true); return; }
+    const messages = msgs || [];
+    const exportedAt = new Date().toISOString();
+
+    // ---- Build blocks (header + day separators + messages) ----
+    const headerHtml = `
+      <div class="pdf-band">
+        <div class="pdf-brand"><div class="pdf-mark">SW</div><div class="pdf-brand-name">STREAT WEAR</div></div>
+        <div class="pdf-title">Live Chat <span>Transcript</span></div>
+        <div class="pdf-sub">Customer support conversation record · Exported ${esc(pdfFmtFull(exportedAt))}</div>
+      </div>
+      <div class="pdf-info">
+        <div class="pdf-info-card"><div class="pdf-info-label">Customer Name</div><div class="pdf-info-value">${esc(session.customer_name || 'Visitor')}</div></div>
+        <div class="pdf-info-card blue"><div class="pdf-info-label">Mobile Number</div><div class="pdf-info-value">${esc(session.customer_mobile || '—')}</div></div>
+        <div class="pdf-info-card gold"><div class="pdf-info-label">Chat Started</div><div class="pdf-info-value">${esc(pdfFmtFull(session.created_at))}</div></div>
+        <div class="pdf-info-card ink"><div class="pdf-info-label">Status · Messages</div><div class="pdf-info-value">${session.status === 'closed' ? 'Closed' : 'Open'} · ${messages.length}</div></div>
+      </div>
+      <div class="pdf-section-label">Conversation</div>`;
+
+    const blocks = [];
+    let lastDay = '';
+    messages.forEach(m=>{
+      const day = pdfFmtDay(m.created_at);
+      if(day !== lastDay){
+        blocks.push(`<div class="pdf-daysep"><span>${esc(day)}</span></div>`);
+        lastDay = day;
+      }
+      const who = m.sender === 'admin' ? 'Streat Wear' : esc(session.customer_name || 'Customer');
+      blocks.push(`
+        <div class="pdf-msg ${m.sender === 'admin' ? 'admin' : 'customer'}">
+          <div class="pdf-meta"><b>${who}</b> · ${esc(pdfFmtTime(m.created_at))}</div>
+          <div class="pdf-bubble">${esc(m.message)}</div>
+        </div>`);
+    });
+    if(!blocks.length) blocks.push(`<div class="pdf-daysep"><span>No messages</span></div>`);
+
+    // ---- Measure blocks so pages break between messages, never through one ----
+    stage = document.createElement('div');
+    stage.className = 'pdf-stage';
+    document.body.appendChild(stage);
+
+    const PAGE_H = 1123, FOOT_H = 44, TOP_PAD = 40, BOTTOM_GAP = 24;
+
+    const measurePage = document.createElement('div');
+    measurePage.className = 'pdf-page';
+    measurePage.style.height = 'auto';
+    measurePage.innerHTML = `<div class="pdf-head-wrap">${headerHtml}</div><div class="pdf-inner"></div>`;
+    stage.appendChild(measurePage);
+    const headerH = measurePage.querySelector('.pdf-head-wrap').offsetHeight;
+    const measureInner = measurePage.querySelector('.pdf-inner');
+    measureInner.innerHTML = blocks.join('');
+    const blockHeights = Array.from(measureInner.children).map(el=>{
+      const cs = getComputedStyle(el);
+      return el.offsetHeight + parseFloat(cs.marginTop || 0) + parseFloat(cs.marginBottom || 0);
+    });
+    stage.removeChild(measurePage);
+
+    const pages = [];
+    let current = [];
+    let used = headerH + TOP_PAD;
+    blocks.forEach((b, i)=>{
+      const h = blockHeights[i];
+      const limit = PAGE_H - FOOT_H - BOTTOM_GAP;
+      if(current.length && used + h > limit){
+        pages.push(current);
+        current = [];
+        used = TOP_PAD;
+      }
+      current.push(b);
+      used += h;
+    });
+    if(current.length) pages.push(current);
+
+    // ---- Render each page at high resolution ----
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true });
+    const SCALE = 3;
+
+    for(let p = 0; p < pages.length; p++){
+      const page = document.createElement('div');
+      page.className = 'pdf-page';
+      page.innerHTML = `
+        ${p === 0 ? headerHtml : ''}
+        <div class="pdf-inner">${pages[p].join('')}</div>
+        <div class="pdf-foot">
+          <span><b>STREAT WEAR</b> · Live Chat Transcript · ${esc(session.customer_name || 'Visitor')}</span>
+          <span>Page ${p + 1} of ${pages.length}</span>
+        </div>`;
+      stage.appendChild(page);
+      btn.textContent = 'Page ' + (p + 1) + '/' + pages.length + '...';
+      const canvas = await html2canvas(page, { scale:SCALE, backgroundColor:'#F5F3EE', useCORS:true, logging:false, width:794, height:PAGE_H, windowWidth:794 });
+      stage.removeChild(page);
+      if(p > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+    }
+
+    const safeName = String(session.customer_name || 'visitor').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'visitor';
+    const dateStr = new Date().toISOString().slice(0,10);
+    pdf.save(`streatwear-chat-${safeName}-${dateStr}.pdf`);
+    showToast('PDF downloaded');
+  } catch(err){
+    console.error(err);
+    showToast('PDF export failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+  } finally {
+    if(stage && stage.parentNode) stage.parentNode.removeChild(stage);
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+document.getElementById('chatExportPdfBtn').addEventListener('click', exportChatPdf);
 
 // Global listener across ALL sessions — powers the badge + sound even when
 // the admin isn't currently viewing the Live Chat tab or a specific thread.
@@ -1707,11 +1946,11 @@ function subscribeToAllChatMessages(){
       if(m.sender !== 'customer') return;
       const chatTabActive = document.getElementById('tab-chat').classList.contains('active');
       const isOpenThread = m.session_id === activeChatSessionId;
-      if(!chatTabActive || !isOpenThread){
-        chatUnreadTotal++;
-        updateChatTabBadge();
+      if(!chatTabActive || !isOpenThread || document.hidden){
+        if(!chatTabActive || !isOpenThread){ chatUnreadTotal++; updateChatTabBadge(); }
         playChatDing();
-        showChatBrowserNotification('New message', m.message);
+        const who = chatNameCache[m.session_id] || 'Customer';
+        showChatBrowserNotification('💬 ' + who, m.message);
       }
       if(chatTabActive) loadChatSessions();
     })
@@ -1722,9 +1961,10 @@ function subscribeToAllChatMessages(){
   sb.channel('admin_all_chat_sessions')
     .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_sessions' }, (payload)=>{
       const s = payload.new;
+      chatNameCache[s.id] = s.customer_name || 'Visitor';
       const chatTabActive = document.getElementById('tab-chat').classList.contains('active');
       playChatDing();
-      showChatBrowserNotification('New chat started', (s.customer_name || 'Visitor') + (s.customer_mobile ? ' · ' + s.customer_mobile : ''));
+      showChatBrowserNotification('🔴 New chat started', (s.customer_name || 'Visitor') + (s.customer_mobile ? ' · ' + s.customer_mobile : ''));
       if(chatTabActive) loadChatSessions();
     })
     .subscribe();
@@ -1733,22 +1973,107 @@ function subscribeToAllChatMessages(){
 // ============================================
 // BROWSER NOTIFICATIONS
 // ============================================
-function requestChatNotificationPermission(){
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'default'){
-    Notification.requestPermission();
+const chatNameCache = {};
+let chatSwReg = null;
+let chatNotifIconUrl = null;
+
+// Notification icon as PNG (Android does not show SVG icons)
+function getChatNotifIcon(){
+  if(chatNotifIconUrl) return chatNotifIconUrl;
+  try{
+    const c = document.createElement('canvas');
+    c.width = 192; c.height = 192;
+    const g = c.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 192, 192);
+    grad.addColorStop(0, '#E8352E'); grad.addColorStop(1, '#B8231D');
+    g.fillStyle = grad;
+    const r = 40;
+    g.beginPath();
+    g.moveTo(r, 0); g.lineTo(192 - r, 0); g.quadraticCurveTo(192, 0, 192, r);
+    g.lineTo(192, 192 - r); g.quadraticCurveTo(192, 192, 192 - r, 192);
+    g.lineTo(r, 192); g.quadraticCurveTo(0, 192, 0, 192 - r);
+    g.lineTo(0, r); g.quadraticCurveTo(0, 0, r, 0);
+    g.fill();
+    g.fillStyle = '#fff';
+    g.font = '900 84px Arial, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('SW', 96, 102);
+    chatNotifIconUrl = c.toDataURL('image/png');
+  } catch(e){ chatNotifIconUrl = ''; }
+  return chatNotifIconUrl;
+}
+
+function waitForSwActive(reg){
+  return new Promise((resolve)=>{
+    if(reg.active) return resolve(reg);
+    const sw = reg.installing || reg.waiting;
+    if(!sw) return resolve(reg);
+    const timer = setTimeout(()=> resolve(reg), 4000);
+    sw.addEventListener('statechange', ()=>{
+      if(sw.state === 'activated'){ clearTimeout(timer); resolve(reg); }
+    });
+  });
+}
+
+async function setupChatServiceWorker(){
+  if(chatSwReg) return chatSwReg;
+  if(!('serviceWorker' in navigator)) return null;
+  try{
+    const reg = await navigator.serviceWorker.register('/admin-sw.js', { scope:'/admin' });
+    chatSwReg = await waitForSwActive(reg);
+    return chatSwReg;
+  } catch(e){
+    console.warn('Chat notification service worker failed:', e);
+    return null;
   }
 }
 
-function showChatBrowserNotification(title, body){
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', (e)=>{
+    if(e.data && e.data.type === 'sw-open-chat'){
+      const tab = document.querySelector('.tab-btn[data-tab="chat"]');
+      if(tab) tab.click();
+    }
+  });
+}
+
+function requestChatNotificationPermission(){
+  setupChatServiceWorker();
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission();
+    // Some browsers only show the prompt after a tap — ask again on the first tap
+    document.addEventListener('click', function askOnce(){
+      if(Notification.permission === 'default') Notification.requestPermission();
+      document.removeEventListener('click', askOnce);
+    });
+  }
+}
+
+async function showChatBrowserNotification(title, body){
   if(!('Notification' in window)) return;
   if(Notification.permission !== 'granted') return;
+  const icon = getChatNotifIcon();
+  const options = {
+    body: body || '',
+    icon: icon,
+    badge: icon,
+    tag: 'sw-live-chat',
+    renotify: true,
+    vibrate: [200, 100, 200],
+    data: { url: location.href }
+  };
+  // Android Chrome: notifications MUST go through the service worker
   try{
-    const n = new Notification(title, {
-      body: body || '',
-      icon: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23E8352E\'/%3E%3Ctext x=\'50\' y=\'68\' font-family=\'Arial,sans-serif\' font-weight=\'900\' font-size=\'42\' fill=\'white\' text-anchor=\'middle\'%3ESW%3C/text%3E%3C/svg%3E',
-      tag: 'sw-live-chat'
-    });
+    const reg = await setupChatServiceWorker();
+    if(reg && reg.showNotification){
+      await reg.showNotification(title, options);
+      return;
+    }
+  } catch(e){ /* fall back below */ }
+  // Desktop fallback
+  try{
+    const n = new Notification(title, options);
     n.onclick = ()=>{
       window.focus();
       document.querySelector('.tab-btn[data-tab="chat"]').click();
@@ -1756,6 +2081,13 @@ function showChatBrowserNotification(title, body){
     };
   } catch(e){ /* notification failed, ignore */ }
 }
+
+// When the admin comes back to the tab, refresh the chat list in case anything was missed
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && document.getElementById('adminApp').style.display === 'block'){
+    loadChatSessions();
+  }
+});
 
 checkSession();
 </script>
