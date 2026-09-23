@@ -173,7 +173,7 @@ input, select, textarea{ font-family:inherit; }
 .pdf-band::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:6px; background:linear-gradient(90deg,#E8352E 0%,#E8352E 55%,#F2C230 55%,#F2C230 78%,#1C3F94 78%); }
 .pdf-brand{ display:flex; align-items:center; gap:14px; }
 .pdf-mark{ width:48px; height:48px; border-radius:11px; background:linear-gradient(155deg,#E8352E,#B8231D); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:20px; color:#fff; }
-.pdf-brand-name{ font-family:'Anton',sans-serif; font-size:26px; letter-spacing:.02em; }
+.pdf-brand-name{ font-family:'Anton',sans-serif; font-size:26px; letter-spacing:.02em; text-transform:uppercase; }
 .pdf-title{ font-family:'Anton',sans-serif; font-size:34px; text-transform:uppercase; margin-top:22px; letter-spacing:.01em; }
 .pdf-title span{ color:#E8352E; }
 .pdf-sub{ font-size:13px; color:#B9B9B9; margin-top:6px; }
@@ -1828,11 +1828,15 @@ async function exportChatPdf(){
     if(!session){ showToast('Conversation not found', true); return; }
     const messages = msgs || [];
     const exportedAt = new Date().toISOString();
+    const brandInput = document.getElementById('brandNameInput');
+    const brandName = (brandInput && brandInput.value.trim()) || 'STREAT WEAR';
+    const markInput = document.getElementById('logoTextInput');
+    const markText = (markInput && markInput.value.trim()) || 'SW';
 
     // ---- Build blocks (header + day separators + messages) ----
     const headerHtml = `
       <div class="pdf-band">
-        <div class="pdf-brand"><div class="pdf-mark">SW</div><div class="pdf-brand-name">STREAT WEAR</div></div>
+        <div class="pdf-brand"><div class="pdf-mark">${esc(markText)}</div><div class="pdf-brand-name">${esc(brandName)}</div></div>
         <div class="pdf-title">Live Chat <span>Transcript</span></div>
         <div class="pdf-sub">Customer support conversation record · Exported ${esc(pdfFmtFull(exportedAt))}</div>
       </div>
@@ -1852,7 +1856,7 @@ async function exportChatPdf(){
         blocks.push(`<div class="pdf-daysep"><span>${esc(day)}</span></div>`);
         lastDay = day;
       }
-      const who = m.sender === 'admin' ? 'Streat Wear' : esc(session.customer_name || 'Customer');
+      const who = m.sender === 'admin' ? esc(brandName) : esc(session.customer_name || 'Customer');
       blocks.push(`
         <div class="pdf-msg ${m.sender === 'admin' ? 'admin' : 'customer'}">
           <div class="pdf-meta"><b>${who}</b> · ${esc(pdfFmtTime(m.created_at))}</div>
@@ -1910,7 +1914,7 @@ async function exportChatPdf(){
         ${p === 0 ? headerHtml : ''}
         <div class="pdf-inner">${pages[p].join('')}</div>
         <div class="pdf-foot">
-          <span><b>STREAT WEAR</b> · Live Chat Transcript · ${esc(session.customer_name || 'Visitor')}</span>
+          <span><b>${esc(brandName)}</b> · Live Chat Transcript · ${esc(session.customer_name || 'Visitor')}</span>
           <span>Page ${p + 1} of ${pages.length}</span>
         </div>`;
       stage.appendChild(page);

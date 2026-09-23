@@ -1273,13 +1273,63 @@
   .chat-closed{ display:none; flex-direction:column; align-items:center; gap:10px; padding:14px; border-top:1px solid var(--line-dark); background:var(--off); flex-shrink:0; text-align:center; }
   .chat-closed p{ font-size:12.5px; color:#6B6B6B; }
   .chat-closed button{ background:var(--red); color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:800; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .chat-head > div:first-child{ min-width:0; flex:1; }
+  .chat-head strong{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat-dl{ background:rgba(245,243,238,0.12); border:none; color:var(--off); width:30px; height:30px; border-radius:6px; cursor:pointer; display:none; align-items:center; justify-content:center; flex-shrink:0; }
+  .chat-dl:hover{ background:var(--blue); }
+  .chat-dl:disabled{ opacity:.5; cursor:wait; }
+  .chat-closed-actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .chat-closed button.chat-closed-dl{ background:var(--ink); }
   /* Mobile: keep chat button clear of the sticky DM/Order bar and the WhatsApp button,
-     and let the footer's bottom row (© + Privacy / Terms) show above the sticky bar */
+     open the chat full-screen above the site header, and let the footer's
+     bottom row (© + Privacy / Terms) show above the sticky bar */
   @media (max-width:700px){
     #chatFab{ right:18px; bottom:156px; width:54px; height:54px; }
-    #chatPanel{ right:14px; bottom:220px; width:calc(100vw - 28px); height:440px; max-height:calc(100svh - 240px); }
+    #chatPanel{
+      top:0; left:0; right:0; bottom:auto; width:100%; max-width:100%;
+      height:100svh; max-height:none; border-radius:0; border:none; z-index:400;
+      padding-bottom:env(safe-area-inset-bottom, 0px);
+    }
+    #chatPanel .chat-head{ padding-top:calc(14px + env(safe-area-inset-top, 0px)); }
+    .chat-start input, .chat-foot input{ font-size:16px; } /* prevents auto-zoom when typing */
+    html.sw-chat-open, html.sw-chat-open body{ overflow:hidden; }
     footer{ padding-bottom:110px; }
   }
+
+  /* ---------- Chat PDF export (rendered off-screen, never visible) ---------- */
+  .pdf-stage{ position:fixed; left:-12000px; top:0; z-index:-1; }
+  .pdf-page{ width:794px; height:1123px; background:#F5F3EE; position:relative; overflow:hidden; font-family:'Inter',sans-serif; color:#0B0B0D; }
+  .pdf-page .pdf-inner{ padding:40px 48px 0; }
+  .pdf-band{ background:linear-gradient(135deg,#0B0B0D 0%,#1c1c22 60%,#2a0f0e 100%); color:#F5F3EE; padding:34px 48px 30px; position:relative; }
+  .pdf-band::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:6px; background:linear-gradient(90deg,#E8352E 0%,#E8352E 55%,#F2C230 55%,#F2C230 78%,#1C3F94 78%); }
+  .pdf-brand{ display:flex; align-items:center; gap:14px; }
+  .pdf-mark{ width:48px; height:48px; border-radius:11px; background:linear-gradient(155deg,#E8352E,#B8231D); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:20px; color:#fff; }
+  .pdf-brand-name{ font-family:'Anton',sans-serif; font-size:26px; letter-spacing:.02em; text-transform:uppercase; }
+  .pdf-title{ font-family:'Anton',sans-serif; font-size:34px; text-transform:uppercase; margin-top:22px; letter-spacing:.01em; }
+  .pdf-title span{ color:#E8352E; }
+  .pdf-sub{ font-size:13px; color:#B9B9B9; margin-top:6px; }
+  .pdf-info{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:26px 48px 8px; }
+  .pdf-info-card{ background:#fff; border-radius:12px; padding:14px 16px; border-left:5px solid #E8352E; box-shadow:0 6px 18px -10px rgba(0,0,0,0.25); }
+  .pdf-info-card.blue{ border-left-color:#1C3F94; }
+  .pdf-info-card.gold{ border-left-color:#F2C230; }
+  .pdf-info-card.ink{ border-left-color:#0B0B0D; }
+  .pdf-info-label{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#8A8A8A; margin-bottom:4px; }
+  .pdf-info-value{ font-size:15px; font-weight:700; word-break:break-word; }
+  .pdf-section-label{ font-family:'Anton',sans-serif; font-size:16px; text-transform:uppercase; margin:22px 48px 4px; color:#0B0B0D; display:flex; align-items:center; gap:10px; }
+  .pdf-section-label::after{ content:''; flex:1; height:2px; background:#E8352E; opacity:.35; }
+  .pdf-msg{ display:flex; flex-direction:column; margin-bottom:14px; }
+  .pdf-msg.customer{ align-items:flex-end; }
+  .pdf-msg.admin{ align-items:flex-start; }
+  .pdf-meta{ font-size:10.5px; font-weight:700; color:#8A8A8A; margin-bottom:4px; letter-spacing:.02em; }
+  .pdf-msg.customer .pdf-meta b{ color:#B8231D; }
+  .pdf-msg.admin .pdf-meta b{ color:#1C3F94; }
+  .pdf-bubble{ max-width:74%; padding:11px 15px; border-radius:14px; font-size:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+  .pdf-msg.customer .pdf-bubble{ background:linear-gradient(155deg,#E8352E,#B8231D); color:#fff; border-bottom-right-radius:4px; }
+  .pdf-msg.admin .pdf-bubble{ background:#fff; color:#0B0B0D; border:1.5px solid #DAD6CB; border-bottom-left-radius:4px; }
+  .pdf-daysep{ text-align:center; margin:6px 0 14px; }
+  .pdf-daysep span{ display:inline-block; background:#0B0B0D; color:#F5F3EE; font-size:10.5px; font-weight:700; padding:4px 12px; border-radius:20px; letter-spacing:.04em; }
+  .pdf-foot{ position:absolute; left:0; right:0; bottom:0; height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 48px; background:#0B0B0D; color:#B9B9B9; font-size:11px; }
+  .pdf-foot b{ color:#F2C230; font-weight:700; }
 </style>
 
 <button id="chatFab" aria-label="Open live chat">
@@ -1291,6 +1341,7 @@
   <div class="chat-head">
     <div><strong id="chatHeadTitle">Chat with us</strong><span>We usually reply in a few minutes</span></div>
     <div class="chat-head-actions">
+      <button class="chat-dl" id="chatDownloadBtn" aria-label="Download chat as PDF" title="Download chat (PDF)"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M2.5 12.5v1h11v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="chat-end" id="chatEndBtn">End Chat</button>
       <button class="chat-close" id="chatCloseBtn" aria-label="Close chat">&times;</button>
     </div>
@@ -1312,7 +1363,10 @@
   </div>
   <div class="chat-closed" id="chatClosedBox">
     <p>This conversation has been closed. Thank you for chatting with us!</p>
-    <button id="chatNewBtn">Start New Chat</button>
+    <div class="chat-closed-actions">
+      <button id="chatNewBtn">Start New Chat</button>
+      <button class="chat-closed-dl" id="chatClosedDownloadBtn">Download Chat</button>
+    </div>
   </div>
 </div>
 
@@ -2039,6 +2093,8 @@
     const newChatBtn = document.getElementById('chatNewBtn');
     const mobileInput = document.getElementById('chatMobileInput');
     const consentCheck = document.getElementById('chatConsentCheck');
+    const dlBtn = document.getElementById('chatDownloadBtn');
+    const closedDlBtn = document.getElementById('chatClosedDownloadBtn');
 
     let sessionId = localStorage.getItem('sw_chat_session_id') || null;
     let customerName = localStorage.getItem('sw_chat_customer_name') || '';
@@ -2071,6 +2127,7 @@
       foot.style.display = 'none';
       closedBox.style.display = 'none';
       endBtn.style.display = 'none';
+      dlBtn.style.display = 'none';
       headTitle.textContent = 'Chat with us';
     }
 
@@ -2081,6 +2138,7 @@
       foot.style.display = 'flex';
       closedBox.style.display = 'none';
       endBtn.style.display = 'inline-block';
+      dlBtn.style.display = 'inline-flex';
       headTitle.textContent = customerName ? ('Chat — ' + customerName) : 'Chat with us';
     }
 
@@ -2091,6 +2149,7 @@
       foot.style.display = 'none';
       closedBox.style.display = 'flex';
       endBtn.style.display = 'none';
+      dlBtn.style.display = 'inline-flex';
       scrollToBottom();
     }
 
@@ -2131,9 +2190,30 @@
         .subscribe();
     }
 
+    // On phones the chat opens full-screen; keep it sized to the visible area
+    // so the keyboard never hides the message box.
+    const isMobileChat = ()=> window.matchMedia('(max-width:700px)').matches;
+    function fitPanel(){
+      const vv = window.visualViewport;
+      if(!panelOpen || !isMobileChat() || !vv){
+        panel.style.top = ''; panel.style.height = '';
+        return;
+      }
+      panel.style.top = vv.offsetTop + 'px';
+      panel.style.height = vv.height + 'px';
+      scrollToBottom();
+    }
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', fitPanel);
+      window.visualViewport.addEventListener('scroll', fitPanel);
+    }
+    window.addEventListener('resize', fitPanel);
+
     async function openPanel(){
       panel.classList.add('open');
       panelOpen = true;
+      document.documentElement.classList.add('sw-chat-open');
+      fitPanel();
       unreadCount = 0;
       updateBadge();
       if(sessionId){
@@ -2151,6 +2231,8 @@
     function closePanel(){
       panel.classList.remove('open');
       panelOpen = false;
+      document.documentElement.classList.remove('sw-chat-open');
+      fitPanel();
     }
 
     function resetChat(){
@@ -2225,6 +2307,130 @@
       await sb.from('chat_messages').insert([{ session_id:sessionId, sender:'customer', message:text }]);
       await sb.from('chat_sessions').update({ last_message_at: new Date().toISOString() }).eq('id', sessionId);
     }
+
+    // ---------- Customer PDF export (high quality, colorful) ----------
+    function loadScriptOnce(src){
+      return new Promise((resolve, reject)=>{
+        if(document.querySelector('script[data-src="' + src + '"]')) return resolve();
+        const sc = document.createElement('script');
+        sc.src = src; sc.async = true; sc.dataset.src = src;
+        sc.onload = ()=> resolve();
+        sc.onerror = ()=> reject(new Error('Failed to load ' + src));
+        document.head.appendChild(sc);
+      });
+    }
+    const fmtTime = (iso)=> new Date(iso).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    const fmtDay = (iso)=> new Date(iso).toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+    const fmtFull = (iso)=> iso ? (fmtDay(iso) + ', ' + fmtTime(iso)) : '—';
+
+    async function exportChatPdf(btn){
+      if(!sessionId) return;
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      if(btn === closedDlBtn) btn.textContent = 'Preparing...';
+      let stage = null;
+      try{
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        if(document.fonts && document.fonts.ready) await document.fonts.ready;
+
+        const [{ data: session }, { data: msgs }] = await Promise.all([
+          sb.from('chat_sessions').select('*').eq('id', sessionId).maybeSingle(),
+          sb.from('chat_messages').select('*').eq('session_id', sessionId).order('created_at', { ascending:true })
+        ]);
+        if(!session) throw new Error('Conversation not found');
+        const messages = msgs || [];
+        const brandEl = document.getElementById('brandText1');
+        const brandName = (brandEl && brandEl.textContent.trim()) || 'STREAT WEAR';
+        const markEl = document.getElementById('brandMark1');
+        const markText = (markEl && markEl.textContent.trim()) || 'SW';
+        const custName = session.customer_name || 'You';
+
+        const headerHtml = `
+          <div class="pdf-band">
+            <div class="pdf-brand"><div class="pdf-mark">${esc(markText || 'SW')}</div><div class="pdf-brand-name">${esc(brandName)}</div></div>
+            <div class="pdf-title">Live Chat <span>Transcript</span></div>
+            <div class="pdf-sub">Your conversation with ${esc(brandName)} · Downloaded ${esc(fmtFull(new Date().toISOString()))}</div>
+          </div>
+          <div class="pdf-info">
+            <div class="pdf-info-card"><div class="pdf-info-label">Name</div><div class="pdf-info-value">${esc(custName)}</div></div>
+            <div class="pdf-info-card blue"><div class="pdf-info-label">Mobile Number</div><div class="pdf-info-value">${esc(session.customer_mobile || '—')}</div></div>
+            <div class="pdf-info-card gold"><div class="pdf-info-label">Chat Started</div><div class="pdf-info-value">${esc(fmtFull(session.created_at))}</div></div>
+            <div class="pdf-info-card ink"><div class="pdf-info-label">Status · Messages</div><div class="pdf-info-value">${session.status === 'closed' ? 'Closed' : 'Open'} · ${messages.length}</div></div>
+          </div>
+          <div class="pdf-section-label">Conversation</div>`;
+
+        const blocks = [];
+        let lastDay = '';
+        messages.forEach(m=>{
+          const day = fmtDay(m.created_at);
+          if(day !== lastDay){ blocks.push(`<div class="pdf-daysep"><span>${esc(day)}</span></div>`); lastDay = day; }
+          const who = m.sender === 'admin' ? esc(brandName) : esc(custName);
+          blocks.push(`
+            <div class="pdf-msg ${m.sender === 'admin' ? 'admin' : 'customer'}">
+              <div class="pdf-meta"><b>${who}</b> · ${esc(fmtTime(m.created_at))}</div>
+              <div class="pdf-bubble">${esc(m.message)}</div>
+            </div>`);
+        });
+        if(!blocks.length) blocks.push(`<div class="pdf-daysep"><span>No messages</span></div>`);
+
+        stage = document.createElement('div');
+        stage.className = 'pdf-stage';
+        document.body.appendChild(stage);
+
+        const PAGE_H = 1123, FOOT_H = 44, TOP_PAD = 40, BOTTOM_GAP = 24;
+        const measurePage = document.createElement('div');
+        measurePage.className = 'pdf-page';
+        measurePage.style.height = 'auto';
+        measurePage.innerHTML = `<div class="pdf-head-wrap">${headerHtml}</div><div class="pdf-inner"></div>`;
+        stage.appendChild(measurePage);
+        const headerH = measurePage.querySelector('.pdf-head-wrap').offsetHeight;
+        const measureInner = measurePage.querySelector('.pdf-inner');
+        measureInner.innerHTML = blocks.join('');
+        const heights = Array.from(measureInner.children).map(el=>{
+          const cs = getComputedStyle(el);
+          return el.offsetHeight + parseFloat(cs.marginTop || 0) + parseFloat(cs.marginBottom || 0);
+        });
+        stage.removeChild(measurePage);
+
+        const pages = [];
+        let current = [], used = headerH + TOP_PAD;
+        blocks.forEach((b, i)=>{
+          if(current.length && used + heights[i] > PAGE_H - FOOT_H - BOTTOM_GAP){
+            pages.push(current); current = []; used = TOP_PAD;
+          }
+          current.push(b); used += heights[i];
+        });
+        if(current.length) pages.push(current);
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true });
+        for(let p = 0; p < pages.length; p++){
+          const page = document.createElement('div');
+          page.className = 'pdf-page';
+          page.innerHTML = `
+            ${p === 0 ? headerHtml : ''}
+            <div class="pdf-inner">${pages[p].join('')}</div>
+            <div class="pdf-foot"><span><b>${esc(brandName)}</b> · Live Chat Transcript</span><span>Page ${p + 1} of ${pages.length}</span></div>`;
+          stage.appendChild(page);
+          const canvas = await html2canvas(page, { scale:3, backgroundColor:'#F5F3EE', useCORS:true, logging:false, width:794, height:PAGE_H, windowWidth:794 });
+          stage.removeChild(page);
+          if(p > 0) pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+        }
+        const safeBrand = brandName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'chat';
+        pdf.save(`${safeBrand}-chat-${new Date().toISOString().slice(0,10)}.pdf`);
+      } catch(err){
+        console.error(err);
+        alert('Could not download the chat right now. Please try again.');
+      } finally {
+        if(stage && stage.parentNode) stage.parentNode.removeChild(stage);
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+    dlBtn.addEventListener('click', ()=> exportChatPdf(dlBtn));
+    closedDlBtn.addEventListener('click', ()=> exportChatPdf(closedDlBtn));
 
     sendBtn.addEventListener('click', sendMessage);
     msgInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendMessage(); });
