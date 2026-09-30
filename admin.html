@@ -211,6 +211,14 @@ input, select, textarea{ font-family:inherit; }
   .chat-sessions-list{ width:100%; max-height:220px; }
   .chat-thread-panel{ height:60svh; min-height:380px; }
 }
+.extra-imgs{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.extra-img{ position:relative; width:72px; height:72px; }
+.extra-img img{ width:100%; height:100%; object-fit:cover; border-radius:8px; background:#eee; }
+.extra-img button{ position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; border:none; background:var(--red-deep); color:#fff; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; }
+.rev-noavatar{ width:64px; height:64px; border-radius:50%; background:var(--off-2); color:var(--red); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:22px; flex-shrink:0; }
+.addr-box{ margin-top:14px; padding:12px 14px; background:var(--off-2); border-radius:10px; border-left:4px solid var(--blue); }
+.addr-box .addr-label{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#8A8A8A; margin-bottom:6px; }
+.addr-box pre{ font-family:'Inter',sans-serif; font-size:13.5px; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
 </style>
 </head>
 <body>
@@ -665,10 +673,10 @@ async function uploadImage(file, folder){
   return data.publicUrl;
 }
 
-function imgUploadWidget(id, existingUrl){
+function imgUploadWidget(id, existingUrl, label){
   return `
     <div class="field">
-      <label>Image</label>
+      <label>${label || 'Image'}</label>
       <div class="img-upload" id="${id}_wrap">
         ${existingUrl ? `<img src="${esc(existingUrl)}" class="preview" id="${id}_preview">` : `<div class="hint">Tap to choose an image</div>`}
         <input type="file" id="${id}" accept="image/*">
@@ -715,6 +723,23 @@ function wireImgUpload(id, onUploaded){
 // ============================================
 // ORDERS
 // ============================================
+  // Delivery address ([ADDRESS]…[/ADDRESS]) and registered-customer tag ([CUSTOMER:id]) live inside `details`
+  function extractOrderMeta(d){
+    d = d || '';
+    const m = d.match(/\[ADDRESS\]\n?([\s\S]*?)\n?\[\/ADDRESS\]/);
+    return { address: m ? m[1].trim() : '', registered: /\[CUSTOMER:[^\]]+\]/.test(d) };
+  }
+  function stripOrderMeta(d){
+    return String(d || '').replace(/\[ADDRESS\][\s\S]*?\[\/ADDRESS\]/g,'').replace(/\[CUSTOMER:[^\]]*\]/g,'').trim();
+  }
+  const orderCopyText = {};
+  function copyOrderAddress(id){
+    const t = orderCopyText[id] || '';
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(()=> showToast('Address copied'), ()=> showToast('Could not copy', true));
+    } else { showToast('Copy not supported here', true); }
+  }
+
   // Parse [CART_ORDER]…[TOTAL:N] block from details field; falls back to legacy columns
   function parseCartFromDetails(d){
     if(!d || typeof d !== 'string') return { items:[], total:0, freeText:'' };
@@ -749,12 +774,15 @@ async function loadOrders(){
     if(!total && items.length){
       total = items.reduce((s,i)=>s+Number(i.price||0)*Number(i.qty||0), 0);
     }
+    freeText = stripOrderMeta(freeText);
+    const meta = extractOrderMeta(o.details || '');
+    if(meta.address) orderCopyText[o.id] = [o.name, o.phone, meta.address].filter(Boolean).join('\n');
     const hasCart = items && items.length;
     return `
     <div class="card" style="padding:0; overflow:hidden;">
       <div style="padding:14px 18px; background:var(--ink); color:var(--off); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
         <div>
-          <div style="font-family:'Anton'; font-size:17px;">#${String(o.id).slice(0,8).toUpperCase()} — ${esc(o.name)}</div>
+          <div style="font-family:'Anton'; font-size:17px;">#${String(o.id).slice(0,8).toUpperCase()} — ${esc(o.name)} ${meta.registered ? '<span class="badge badge-confirmed" style="vertical-align:middle;">Account</span>' : ''}</div>
           <div style="font-family:'IBM Plex Mono'; font-size:11px; color:rgba(245,243,238,0.6); margin-top:2px;">${esc(o.phone)} · ${new Date(o.created_at).toLocaleString()}</div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
@@ -793,6 +821,11 @@ async function loadOrders(){
             ${o.cart_summary ? `<p style="margin-top:6px; font-size:12px; color:#888;">${esc(o.cart_summary)}</p>` : ''}
           </div>
         `}
+        ${meta.address ? `
+          <div class="addr-box">
+            <div class="addr-label"><span>Delivery address</span><button class="btn btn-outline btn-sm" type="button" onclick="copyOrderAddress('${o.id}')">Copy</button></div>
+            <pre>${esc(meta.address)}</pre>
+          </div>` : ''}
       </div>
     </div>
   `;
@@ -813,12 +846,14 @@ document.getElementById('exportOrdersBtn').addEventListener('click', async ()=>{
   const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending:false });
   if(error || !data || !data.length){ showToast('No orders to export', true); return; }
 
-  const headers = ['Name','Phone','Category','Size','Details','Status','Date'];
+  const headers = ['Name','Phone','Category','Size','Details','Address','Registered account','Status','Date'];
   const csvRows = [headers.join(',')];
   data.forEach(o=>{
     const row = [
       o.name, o.phone, o.category || '', o.size || '',
-      (o.details || '').replace(/[\r\n]+/g,' '),
+      stripOrderMeta(o.details || '').replace(/[\r\n]+/g,' '),
+      extractOrderMeta(o.details || '').address.replace(/[\r\n]+/g,', '),
+      extractOrderMeta(o.details || '').registered ? 'Yes' : 'No',
       o.status || '', new Date(o.created_at).toLocaleString()
     ].map(field => `"${String(field).replace(/"/g,'""')}"`);
     csvRows.push(row.join(','));
@@ -840,7 +875,21 @@ document.getElementById('exportOrdersBtn').addEventListener('click', async ()=>{
 // PRODUCTS
 // ============================================
 let editingProductId = null;
+let editingProductOriginal = null;
+let adminProducts = [];
+let productExtraImages = [];
+
+function renderExtraImgs(){
+  const box = document.getElementById('productExtraImgs');
+  if(!box) return;
+  box.innerHTML = productExtraImages.map((u, i) => `
+    <div class="extra-img"><img src="${esc(u)}" alt=""><button type="button" onclick="removeExtraImg(${i})" aria-label="Remove photo">&times;</button></div>
+  `).join('');
+}
+function removeExtraImg(i){ productExtraImages.splice(i, 1); renderExtraImgs(); }
+
 function renderProductForm(){
+  productExtraImages = [];
   document.getElementById('productForm').innerHTML = `
     <div class="form-card">
       <h3 id="productFormTitle">Add Product</h3>
@@ -865,6 +914,24 @@ function renderProductForm(){
           <option value="sold_out">Sold Out</option>
         </select>
       </div>
+      <div class="form-grid">
+        <div class="field"><label>Rating (0-5, optional)</label><input id="productRating" type="number" step="0.1" min="0" max="5" placeholder="4.6"></div>
+        <div class="field"><label>Rating count (optional)</label><input id="productRatingCount" type="number" min="0" placeholder="236"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Sold count (optional)</label><input id="productSold" type="number" min="0" placeholder="120"></div>
+        <div class="field"><label>Sizes (comma separated)</label><input id="productSizes" placeholder="S, M, L, XL"></div>
+      </div>
+      <div class="field"><label>Description (optional)</label><textarea id="productDescription" placeholder="Fabric, fit, what makes this item special..." style="min-height:100px;"></textarea></div>
+      <div class="field">
+        <label>More photos (optional)</label>
+        <div class="img-upload">
+          <div class="hint">Tap to add more photos (you can pick several)</div>
+          <input type="file" id="productExtraInput" accept="image/*" multiple>
+        </div>
+        <div class="upload-progress hidden" id="productExtraProgress">Uploading...</div>
+        <div class="extra-imgs" id="productExtraImgs"></div>
+      </div>
       <div style="display:flex; gap:10px;">
         <button class="btn" id="productSaveBtn">Add Product</button>
         <button class="btn btn-outline hidden" id="productCancelBtn">Cancel</button>
@@ -872,6 +939,25 @@ function renderProductForm(){
     </div>
   `;
   const getUploadedUrl = wireImgUpload('productImg', ()=>{});
+  const extraInput = document.getElementById('productExtraInput');
+  extraInput.addEventListener('change', async ()=>{
+    const files = Array.from(extraInput.files || []);
+    if(!files.length) return;
+    const prog = document.getElementById('productExtraProgress');
+    prog.classList.remove('hidden');
+    try{
+      for(const f of files){
+        const url = await uploadImage(f, 'uploads');
+        productExtraImages.push(url);
+        renderExtraImgs();
+      }
+    }catch(err){
+      showToast('Upload failed: ' + err.message, true);
+    }finally{
+      prog.classList.add('hidden');
+      extraInput.value = '';
+    }
+  });
   document.getElementById('productSaveBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('productName').value.trim();
     if(!name){ showToast('Product name is required', true); return; }
@@ -883,6 +969,23 @@ function renderProductForm(){
       old_price: document.getElementById('productOldPrice').value || null,
       stock_status: document.getElementById('productStockStatus').value
     };
+    // Extra Daraz-style fields (need the new columns in Supabase — see daraz-upgrade.sql)
+    const orig = editingProductOriginal || {};
+    const setExtra = (key, val, empty, clearVal) => {
+      if(!empty) payload[key] = val;
+      else if(editingProductId && (key in orig)) payload[key] = clearVal;
+    };
+    const descV = document.getElementById('productDescription').value.trim();
+    const sizesV = document.getElementById('productSizes').value.split(',').map(s => s.trim()).filter(Boolean).join(', ');
+    const ratingV = document.getElementById('productRating').value;
+    const rcV = document.getElementById('productRatingCount').value;
+    const soldV = document.getElementById('productSold').value;
+    setExtra('description', descV, !descV, null);
+    setExtra('sizes', sizesV, !sizesV, null);
+    setExtra('images', productExtraImages.slice(), !productExtraImages.length, []);
+    setExtra('rating', Math.min(5, Math.max(0, Number(ratingV))), ratingV === '', null);
+    setExtra('rating_count', Math.max(0, parseInt(rcV, 10) || 0), rcV === '', 0);
+    setExtra('sold_count', Math.max(0, parseInt(soldV, 10) || 0), soldV === '', 0);
     const uploaded = getUploadedUrl();
     if(uploaded) payload.image_url = uploaded;
 
@@ -909,6 +1012,7 @@ async function loadProducts(){
   renderProductForm();
   const { data, error } = await sb.from('products').select('*').order('sort_order', { ascending:true });
   const list = document.getElementById('productsList');
+  adminProducts = data || [];
   if(error){ list.innerHTML = `<div class="loading-row">Error loading products.</div>`; return; }
   if(!data.length){ list.innerHTML = emptyState('No products yet', 'Add your first drop using the form above.'); return; }
   list.innerHTML = data.map(p => `
@@ -921,14 +1025,17 @@ async function loadProducts(){
       </div>
     </div>
     <div class="card-actions">
-      <button class="btn btn-outline btn-sm" onclick='editProduct(${JSON.stringify(p).replace(/'/g,"&apos;")})'>Edit</button>
+      <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">Edit</button>
       <button class="btn btn-danger btn-sm" onclick="deleteRow('products','${p.id}',loadProducts)">Delete</button>
     </div></div>
   `).join('');
 }
 
 function editProduct(p){
+  if(typeof p !== 'object') p = adminProducts.find(x => String(x.id) === String(p));
+  if(!p) return;
   editingProductId = p.id;
+  editingProductOriginal = p;
   renderProductForm();
   document.getElementById('productFormTitle').textContent = 'Edit Product';
   document.getElementById('productName').value = p.name || '';
@@ -937,6 +1044,15 @@ function editProduct(p){
   document.getElementById('productPrice').value = p.price || '';
   document.getElementById('productOldPrice').value = p.old_price || '';
   document.getElementById('productStockStatus').value = p.stock_status || 'in_stock';
+  document.getElementById('productDescription').value = p.description || '';
+  document.getElementById('productSizes').value = p.sizes || '';
+  document.getElementById('productRating').value = (p.rating === null || p.rating === undefined) ? '' : p.rating;
+  document.getElementById('productRatingCount').value = p.rating_count || '';
+  document.getElementById('productSold').value = p.sold_count || '';
+  let imgs = p.images;
+  if(typeof imgs === 'string'){ try{ imgs = JSON.parse(imgs); }catch(e){ imgs = []; } }
+  productExtraImages = Array.isArray(imgs) ? imgs.slice() : [];
+  renderExtraImgs();
   document.getElementById('productSaveBtn').textContent = 'Save Changes';
   document.getElementById('productCancelBtn').classList.remove('hidden');
   if(p.image_url){
@@ -1041,17 +1157,25 @@ function renderReviewForm(){
         <div class="field"><label>Rating (1-5)</label><input id="reviewRating" type="number" min="1" max="5" value="5"></div>
       </div>
       <div class="field"><label>Review text</label><textarea id="reviewText" placeholder="Great quality..."></textarea></div>
+      ${imgUploadWidget('reviewAvatar', '', 'Profile photo (optional)')}
       <button class="btn" id="reviewSaveBtn">Add Review</button>
     </div>
   `;
+  const getAvatarUrl = wireImgUpload('reviewAvatar', ()=>{});
   document.getElementById('reviewSaveBtn').addEventListener('click', async ()=>{
     const name = document.getElementById('reviewName').value.trim();
     const text = document.getElementById('reviewText').value.trim();
     if(!name || !text){ showToast('Name and review text are required', true); return; }
-    const { error } = await sb.from('reviews').insert([{
+    const payload = {
       name, review_text: text, rating: Number(document.getElementById('reviewRating').value) || 5
-    }]);
-    if(error){ showToast('Save failed: ' + error.message, true); return; }
+    };
+    const avatar = getAvatarUrl();
+    if(avatar) payload.avatar_url = avatar;
+    const { error } = await sb.from('reviews').insert([payload]);
+    if(error){
+      showToast(/avatar_url/.test(error.message) ? 'Run account-system.sql in Supabase first (avatar_url column missing)' : 'Save failed: ' + error.message, true);
+      return;
+    }
     showToast('Review added');
     renderReviewForm();
     loadReviews();
@@ -1066,15 +1190,45 @@ async function loadReviews(){
   if(!data.length){ list.innerHTML = emptyState('No reviews yet', 'Add your first review using the form above.'); return; }
   list.innerHTML = data.map(r => `
     <div class="card">
-      <div class="card-info">
-        <h3>${esc(r.name)} — ${'★'.repeat(r.rating||5)}</h3>
-        <p style="margin-top:4px;">${esc(r.review_text)}</p>
+      <div class="card-row">
+        ${r.avatar_url
+          ? `<img src="${esc(r.avatar_url)}" alt="" style="border-radius:50%;">`
+          : `<div class="rev-noavatar">${esc((r.name || '?').trim().charAt(0).toUpperCase())}</div>`}
+        <div class="card-info">
+          <h3>${esc(r.name)} — ${'★'.repeat(r.rating||5)}</h3>
+          <p style="margin-top:4px;">${esc(r.review_text)}</p>
+        </div>
       </div>
-      <div class="card-actions">
+      <div class="card-actions" style="flex-wrap:wrap;">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;">${r.avatar_url ? 'Change photo' : 'Add photo'}<input type="file" accept="image/*" style="display:none;" onchange="setReviewPhoto('${r.id}', this)"></label>
+        ${r.avatar_url ? `<button class="btn btn-outline btn-sm" onclick="removeReviewPhoto('${r.id}')">Remove photo</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick="deleteRow('reviews','${r.id}',loadReviews)">Delete</button>
       </div>
     </div>
   `).join('');
+}
+
+function reviewPhotoError(err){
+  const m = String((err && err.message) || err);
+  showToast(/avatar_url/.test(m) ? 'Run account-system.sql in Supabase first (avatar_url column missing)' : 'Failed: ' + m, true);
+}
+async function setReviewPhoto(id, input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  showToast('Uploading photo...');
+  try{
+    const url = await uploadImage(file, 'uploads');
+    const { error } = await sb.from('reviews').update({ avatar_url: url }).eq('id', id);
+    if(error) throw error;
+    showToast('Photo saved');
+    loadReviews();
+  }catch(err){ reviewPhotoError(err); }
+}
+async function removeReviewPhoto(id){
+  const { error } = await sb.from('reviews').update({ avatar_url: null }).eq('id', id);
+  if(error){ reviewPhotoError(error); return; }
+  showToast('Photo removed');
+  loadReviews();
 }
 
 // ============================================

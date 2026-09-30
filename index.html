@@ -48,6 +48,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sw-auth.js"></script>
 <style>
   :root{
     --ink:#0B0B0D;
@@ -645,6 +646,120 @@
   .qv-body .stock-line.in{ color:#1E7A3D; }
   .qv-body .stock-line.out{ color:var(--red-deep); }
   .qv-body .qv-cta{ margin-top:auto; padding-top:22px; }
+
+  /* =====================================================
+     DARAZ-STYLE SHOP UI (search bar, category row, product grid, bottom nav)
+     ===================================================== */
+  :root{ --tb-h:66px; }
+
+  /* ---- Sticky search + category row ---- */
+  .shopbar{ position:sticky; top:var(--tb-h); z-index:90; background:#fff; border-bottom:1px solid var(--line-dark); box-shadow:0 8px 20px -14px rgba(0,0,0,0.35); padding:12px 0 8px; }
+  .shop-search{ display:flex; align-items:center; border:1.5px solid var(--red); border-radius:26px; background:#fff; padding:3px 3px 3px 15px; transition:box-shadow .25s var(--ease); }
+  .shop-search:focus-within{ box-shadow:0 0 0 4px rgba(232,53,46,0.14); }
+  .shop-search svg{ flex-shrink:0; color:#8A8A8A; }
+  .shop-search input{ flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:'Inter',sans-serif; font-size:14.5px; padding:10px; color:var(--ink); -webkit-appearance:none; appearance:none; }
+  .shop-search input::placeholder{ color:#9A9A9A; }
+  .shop-search button{ flex-shrink:0; background:var(--red); color:#fff; border:none; border-radius:22px; padding:11px 22px; font-family:inherit; font-weight:800; font-size:13.5px; cursor:pointer; transition:background .25s; }
+  .shop-search button:hover{ background:#D42920; }
+
+  .cat-chips{ display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-top:10px; padding:2px 1px 4px; }
+  .cat-chips::-webkit-scrollbar{ display:none; }
+  .cat-chip{ flex:0 0 auto; min-width:74px; display:flex; flex-direction:column; align-items:center; gap:5px; padding:7px 10px 6px; border-radius:12px; border:1.5px solid transparent; background:none; cursor:pointer; font-family:inherit; transition:border-color .25s, background .25s; }
+  .cat-chip .ci{ width:38px; height:38px; border-radius:11px; background:var(--off-2); display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--red); font-family:'Anton',sans-serif; font-size:16px; }
+  .cat-chip .ci img{ width:100%; height:100%; object-fit:cover; }
+  .cat-chip .lb{ font-size:11px; font-weight:700; color:#8A8A8A; max-width:86px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:.02em; }
+  .cat-chip.active{ border-color:var(--red); background:#FFF3F2; }
+  .cat-chip.active .lb{ color:var(--red); }
+
+  /* ---- Drops / product section (light, Daraz-like) ---- */
+  .drops-section{ background:#F0F1F5; color:var(--ink); padding-top:64px; }
+  .drops-section .sec-eyebrow{ color:var(--red); }
+  .drops-section .sec-head{ margin-bottom:22px; }
+  .drops-section .sec-head p{ color:#5A5A5A; }
+  .shop-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .shop-toolbar .left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .shop-toolbar .count{ font-size:13px; font-weight:600; color:#6B6B6B; }
+  .shop-clear{ display:inline-flex; align-items:center; background:#fff; border:1.5px solid var(--red); color:var(--red); border-radius:20px; padding:5px 12px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+  .shop-clear[hidden]{ display:none; }
+  .shop-sort{ padding:9px 12px; border-radius:8px; border:1.5px solid var(--line-dark); background:#fff; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink); }
+
+  .drops-rail{ grid-template-columns:repeat(5,1fr); gap:14px; padding:0 0 24px; }
+  @media (max-width:1100px){ .drops-rail{ grid-template-columns:repeat(4,1fr); } }
+  @media (max-width:860px){ .drops-rail{ grid-template-columns:repeat(3,1fr); gap:12px; } }
+  @media (max-width:600px){ .drops-rail{ grid-template-columns:repeat(2,1fr); gap:10px; } }
+
+  .drops-section .drop-card{ background:#fff; border:1px solid transparent; border-radius:10px; cursor:pointer; box-shadow:0 2px 10px -6px rgba(0,0,0,0.25); display:flex; flex-direction:column; }
+  .drops-section .drop-card:hover{ transform:translateY(-4px); border-color:var(--red); box-shadow:0 16px 28px -16px rgba(0,0,0,0.35); }
+  .drops-section .drop-img{ background:#f4f4f4; }
+  .drops-section .drop-img img{ min-height:0; background:#f4f4f4; }
+  .drops-section .drop-body{ padding:10px 10px 12px; display:flex; flex-direction:column; flex:1; }
+  .drop-body .dz-name{ font-family:'Inter',sans-serif; font-size:13.5px; font-weight:500; line-height:1.35; letter-spacing:0; text-transform:none; color:#212121; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.7em; }
+  .dz-bottom{ display:flex; align-items:flex-end; justify-content:space-between; gap:6px; margin-top:6px; }
+  .dz-price{ font-size:18px; font-weight:800; color:var(--red); line-height:1.2; }
+  .dz-old-row{ margin-top:2px; font-size:12px; color:#9A9A9A; }
+  .dz-old{ text-decoration:line-through; margin-right:4px; }
+  .dz-off{ font-weight:700; color:#212121; }
+  .dz-disc{ position:absolute; left:0; bottom:10px; background:var(--red); color:#fff; font-size:11px; font-weight:800; padding:3px 8px; border-radius:0 4px 4px 0; z-index:2; }
+  .dz-meta{ margin-top:6px; display:flex; align-items:center; gap:8px; font-size:11.5px; color:#8A8A8A; min-height:16px; flex-wrap:wrap; }
+  .dz-rate{ display:inline-flex; align-items:center; gap:3px; color:#4A4A4A; font-weight:600; }
+  .dz-rate .st{ color:#F5A623; }
+  .dz-rate em{ font-style:normal; color:#9A9A9A; font-weight:500; }
+  .dz-add{ flex-shrink:0; width:34px; height:34px; border-radius:50%; border:none; background:var(--red); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .25s, transform .25s var(--ease); }
+  .dz-add:hover{ background:#D42920; transform:scale(1.08); }
+  .dz-add:disabled{ background:var(--steel); cursor:not-allowed; transform:none; }
+  .dz-add.added{ background:#1E7A3D; }
+  .shop-empty{ grid-column:1/-1; text-align:center; padding:56px 20px; color:#7A7A7A; font-size:14px; }
+  .shop-empty h3{ font-family:'Anton',sans-serif; font-size:20px; color:#444; margin-bottom:6px; }
+  .shop-empty button{ margin-top:16px; background:var(--red); color:#fff; border:none; border-radius:8px; padding:11px 22px; font-weight:800; font-size:13px; cursor:pointer; font-family:inherit; }
+  body.rounded-mode .shop-search, body.rounded-mode .shop-search button{ border-radius:30px; }
+  body.rounded-mode .drops-section .drop-card{ border-radius:22px; }
+
+  /* ---- Mobile bottom navigation ---- */
+  .bottom-nav{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:92; background:#fff; border-top:1px solid var(--line-dark); box-shadow:0 -8px 22px rgba(0,0,0,0.09); padding:5px 4px calc(5px + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav .bn{ flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; padding:6px 0 4px; color:#6B6B6B; font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer; position:relative; text-decoration:none; }
+  .bottom-nav .bn.active{ color:var(--red); }
+  .bottom-nav .bn-badge{ position:absolute; top:0; left:calc(50% + 6px); min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--red); color:#fff; font-family:'Anton',sans-serif; font-size:10.5px; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
+  .bottom-nav .bn-badge.zero{ display:none; }
+  @media (max-width:700px){
+    .bottom-nav{ display:flex; }
+    .mobile-cta{ display:none !important; }
+  }
+
+  /* ---- Bottom sheet (Categories / Account) ---- */
+  .nav-sheet-ov{ position:fixed; inset:0; z-index:240; background:rgba(11,11,13,0.55); display:none; }
+  .nav-sheet-ov.open{ display:block; }
+  .nav-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:245; background:#fff; color:var(--ink); border-radius:18px 18px 0 0; max-height:78svh; overflow-y:auto; transform:translateY(100%); transition:transform .35s var(--ease); padding:16px 18px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .nav-sheet.open{ transform:translateY(0); }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .sheet-head h3{ font-family:'Anton',sans-serif; font-size:20px; }
+  .sheet-close{ background:var(--off-2); border:none; width:32px; height:32px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer; }
+  .sheet-cats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .sheet-cat{ display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:1.5px solid var(--line-dark); border-radius:12px; padding:12px 6px; cursor:pointer; font-family:inherit; }
+  .sheet-cat.active{ border-color:var(--red); background:#FFF3F2; }
+  .sheet-cat .ci{ width:54px; height:54px; border-radius:12px; background:var(--off-2); display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--red); font-family:'Anton',sans-serif; font-size:20px; }
+  .sheet-cat .ci img{ width:100%; height:100%; object-fit:cover; }
+  .sheet-cat .lb{ font-size:11.5px; font-weight:700; text-align:center; line-height:1.25; word-break:break-word; }
+  .sheet-links a, .sheet-links button{ display:flex; align-items:center; gap:14px; width:100%; padding:14px 4px; border:none; background:none; border-bottom:1px solid var(--line-dark); font-family:inherit; font-size:15px; font-weight:600; color:var(--ink); text-align:left; cursor:pointer; }
+  .sheet-links .ic{ width:38px; height:38px; border-radius:10px; background:var(--off-2); color:var(--red); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sheet-links .sub{ display:block; font-size:12px; color:#8A8A8A; font-weight:500; margin-top:1px; }
+
+  /* ---- Accounts, address, review photos ---- */
+  .t-avatar{ overflow:hidden; flex-shrink:0; color:#fff; }
+  .t-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .acct-btn{ text-decoration:none; }
+  .acct-btn.on::after{ content:''; position:absolute; top:-3px; right:-3px; width:11px; height:11px; border-radius:50%; background:#5CE87A; border:2px solid var(--ink); }
+  @media (max-width:700px){ .acct-btn{ display:none; } }
+  .quote-form .acct-hint{ font-size:12.5px; color:#6B6B6B; margin:-14px 0 20px; }
+  .quote-form .acct-hint a{ color:var(--red); font-weight:700; text-decoration:underline; }
+  .addr-title{ font-family:'Anton',sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.02em; margin:4px 0 12px; display:flex; align-items:center; gap:10px; }
+  .addr-title::after{ content:''; flex:1; height:1.5px; background:var(--red); opacity:.3; }
+  .acct-card{ display:none; flex-wrap:wrap; align-items:center; gap:12px; padding:14px; border-radius:12px; background:var(--off); margin-bottom:8px; }
+  .acct-card .av{ width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--red),var(--gold)); color:#fff; font-family:'Anton',sans-serif; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .acct-card b{ display:block; font-size:15px; }
+  .acct-card small{ color:#8A8A8A; font-size:12px; }
+  .acct-actions{ width:100%; display:flex; gap:8px; }
+  .acct-actions a, .acct-actions button{ flex:1; text-align:center; padding:11px 8px; border-radius:8px; border:1.5px solid var(--line-dark); background:#fff; color:var(--ink); font-family:inherit; font-weight:800; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; }
+  .acct-actions .primary{ background:var(--red); border-color:var(--red); color:#fff; }
 </style>
 
 </head>
@@ -668,6 +783,7 @@
     <a href="#faq">FAQ</a>
   </nav>
   <div style="display:flex; align-items:center; gap:14px;">
+    <a href="account.html" class="cart-btn acct-btn" id="acctBtn" aria-label="My account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4 20c1.2-3.6 4.2-5.5 8-5.5s6.8 1.9 8 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></a>
     <button class="cart-btn" id="cartBtn" aria-label="Open cart">
       <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2 2h2l1.5 9.5h8L15 4H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="13.5" r="1.1" fill="currentColor"/><circle cx="12.5" cy="13.5" r="1.1" fill="currentColor"/></svg>
       <span class="cart-badge zero" id="cartBadge">0</span>
@@ -734,6 +850,20 @@
 
   <div class="scroll-cue"><span>SCROLL</span><span class="line"></span></div>
 </section>
+
+<!-- ============ SHOP BAR (search + category row) ============ -->
+<div class="shopbar" id="shopBar">
+  <div class="wrap">
+    <form class="shop-search" id="shopSearchForm" role="search" autocomplete="off">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input id="shopSearchInput" type="search" placeholder="Search jerseys, tees, shirts…" aria-label="Search products" enterkeyhint="search">
+      <button type="submit">Search</button>
+    </form>
+    <div class="cat-chips" id="catChips">
+      <button class="cat-chip active" type="button" data-cat=""><span class="ci"><svg width="20" height="20" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/></svg></span><span class="lb">All</span></button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ TRUST MARQUEE ============ -->
 <div class="trust-strip">
@@ -811,6 +941,19 @@
     </div>
   </div>
   <div class="wrap">
+    <div class="shop-toolbar" id="shopToolbar">
+      <div class="left">
+        <span class="count" id="shopResultCount"></span>
+        <button type="button" class="shop-clear" id="shopClear" hidden>Clear filters &#10005;</button>
+      </div>
+      <select class="shop-sort" id="shopSort" aria-label="Sort products">
+        <option value="default">Sort: Latest</option>
+        <option value="popular">Most popular</option>
+        <option value="low">Price: low to high</option>
+        <option value="high">Price: high to low</option>
+        <option value="discount">Biggest discount</option>
+      </select>
+    </div>
     <div class="drops-rail" id="dropsRail">
       <div class="drop-card">
         <div class="drop-img">
@@ -1100,6 +1243,7 @@
     <form class="quote-form reveal" id="orderForm">
       <h3>Order Request</h3>
       <p class="sub">Takes about 60 seconds. We'll confirm by DM or call.</p>
+      <p class="acct-hint" id="orderAcctHint">Have an account? <a href="account.html">Log in</a> to fill your details automatically.</p>
 
       <div class="form-row">
         <div class="field">
@@ -1110,6 +1254,29 @@
           <label for="phone">Phone number</label>
           <input id="phone" type="tel" placeholder="01XXXXXXXXX" required>
         </div>
+      </div>
+      <div class="addr-title">Delivery address</div>
+      <div class="form-row">
+        <div class="field">
+          <label for="addrDivision">Division</label>
+          <select id="addrDivision" required></select>
+        </div>
+        <div class="field">
+          <label for="addrDistrict">District</label>
+          <select id="addrDistrict" required></select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="addrArea">Thana / Upazila / Area</label>
+        <input id="addrArea" type="text" placeholder="e.g. Mirpur 10" maxlength="120" required>
+      </div>
+      <div class="field">
+        <label for="addrFull">Full address</label>
+        <textarea id="addrFull" placeholder="House / flat no, road, block, village…" maxlength="400" required></textarea>
+      </div>
+      <div class="field">
+        <label for="addrLandmark">Landmark (optional)</label>
+        <input id="addrLandmark" type="text" placeholder="Near mosque, school, market…" maxlength="160">
       </div>
       <div class="form-row">
         <div class="field">
@@ -1191,6 +1358,42 @@
     </div>
   </div>
 </footer>
+
+<!-- ============ MOBILE BOTTOM NAVIGATION (Daraz-style) ============ -->
+<nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
+  <a class="bn active" id="bnHome" href="#top">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11l9-7.5L21 11v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    <span>Home</span>
+  </a>
+  <button class="bn" id="bnCats" type="button">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>
+    <span>Categories</span>
+  </button>
+  <button class="bn" id="bnCart" type="button">
+    <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M2 2h2l1.5 9.5h8L15 4H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="13.5" r="1.1" fill="currentColor"/><circle cx="12.5" cy="13.5" r="1.1" fill="currentColor"/></svg>
+    <span>Cart</span>
+    <span class="bn-badge zero" id="navCartBadge">0</span>
+  </button>
+  <button class="bn" id="bnAccount" type="button">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4 20c1.2-3.6 4.2-5.5 8-5.5s6.8 1.9 8 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    <span>Account</span>
+  </button>
+</nav>
+
+<div class="nav-sheet-ov" id="navSheetOv"></div>
+<div class="nav-sheet" id="navSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-head"><h3 id="sheetTitle">Categories</h3><button class="sheet-close" id="sheetClose" type="button" aria-label="Close">&times;</button></div>
+  <div id="sheetCats"><div class="sheet-cats" id="sheetCatGrid"></div></div>
+  <div class="acct-card" id="sheetAcctCard"></div>
+  <div id="sheetAccount" class="sheet-links" style="display:none;">
+    <button type="button" id="sheetChat"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Live Chat<span class="sub">Message us, we reply in minutes</span></span></button>
+    <a href="#" target="_blank" rel="noopener" id="sheetInstagram"><span class="ic"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3.5" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2.8" stroke="currentColor" stroke-width="1.3"/><circle cx="11.7" cy="4.3" r="0.8" fill="currentColor"/></svg></span><span>DM on Instagram<span class="sub">Order or ask about sizes</span></span></a>
+    <a href="#" target="_blank" rel="noopener" id="sheetWhatsapp" style="display:none;"><span class="ic"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 2a6 6 0 00-5.2 9l-.8 3 3.1-.8A6 6 0 108 2z" stroke="currentColor" stroke-width="1.3"/></svg></span><span>WhatsApp<span class="sub">Chat with us on WhatsApp</span></span></a>
+    <a href="#order" id="sheetOrder"><span class="ic"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="2" width="11" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 6h6M5 9h6M5 11.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>Order form<span class="sub">Send us an order request</span></span></a>
+    <a href="privacy-policy.html"><span class="ic"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l5.5 2v4c0 3.5-2.3 6-5.5 7-3.2-1-5.5-3.5-5.5-7v-4l5.5-2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span><span>Privacy Policy</span></a>
+    <a href="terms-of-service.html"><span class="ic"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5.5L13 5v9.5H4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M9.5 1.5V5H13" stroke="currentColor" stroke-width="1.3"/></svg></span><span>Terms of Service</span></a>
+  </div>
+</div>
 
 <!-- ============ MOBILE STICKY CTA ============ -->
 <div class="mobile-cta">
@@ -1658,6 +1861,8 @@
         <div class="cat-overlay"><div class="num mono">${String(i+1).padStart(2,'0')}</div><h3>${esc(c.name)}</h3><p>${esc(c.subtitle) || ''}</p></div>
       </div>
     `).join('');
+    grid.querySelectorAll('.cat-card').forEach((el, i)=> el.addEventListener('click', ()=> selectCategory(data[i].name)));
+    buildCatChips(data);
   }
 
   const uspIcons = {
@@ -1702,41 +1907,158 @@
 
   let productsCache = [];
 
-  async function loadProducts(){
-    const { data, error } = await sb.from('products').select('*').order('sort_order', { ascending:true });
-    if(error || !data || !data.length) return;
-    productsCache = data;
+  // ============================================
+  // DARAZ-STYLE SHOP: state, filtering, sorting, cards
+  // ============================================
+  const shopState = { q:'', cat:'', sort:'default' };
+  let urlParamsApplied = false;
+
+  function normCat(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/s\b/g,''); }
+  function fmtCount(n){
+    n = Number(n || 0);
+    if(n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/,'') + 'K';
+    return String(n);
+  }
+  function discountPct(p){
+    const o = Number(p.old_price), c = Number(p.price);
+    return (o > c && c > 0) ? Math.round((o - c) / o * 100) : 0;
+  }
+
+  function scrollToShop(){
+    const tb = document.getElementById('shopToolbar');
+    if(!tb) return;
+    const top = tb.getBoundingClientRect().top + window.scrollY - document.getElementById('topbar').offsetHeight - document.getElementById('shopBar').offsetHeight - 14;
+    window.scrollTo({ top: Math.max(0, top), behavior:'smooth' });
+  }
+
+  function syncChips(){
+    const cur = normCat(shopState.cat);
+    document.querySelectorAll('.cat-chip, .sheet-cat').forEach(el=>{
+      const c = normCat(el.dataset.cat);
+      el.classList.toggle('active', c === cur);
+    });
+  }
+
+  function selectCategory(name, doScroll){
+    const same = shopState.cat && normCat(shopState.cat) === normCat(name);
+    shopState.cat = (same || !name) ? '' : name;
+    syncChips();
+    renderProducts();
+    if(doScroll !== false) scrollToShop();
+  }
+
+  function buildCatChips(cats){
+    const wrap = document.getElementById('catChips');
+    const sheetGrid = document.getElementById('sheetCatGrid');
+    if(!wrap) return;
+    const allIcon = '<svg width="20" height="20" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="2" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="5" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/></svg>';
+    const icon = c => c.image_url
+      ? `<img src="${esc(c.image_url)}" alt="" loading="lazy" onerror="imgOnError.call(this)">`
+      : esc((c.name || '?').charAt(0).toUpperCase());
+    wrap.innerHTML =
+      `<button class="cat-chip" type="button" data-cat=""><span class="ci">${allIcon}</span><span class="lb">All</span></button>` +
+      cats.map(c => `<button class="cat-chip" type="button" data-cat="${esc(c.name)}"><span class="ci">${icon(c)}</span><span class="lb">${esc(c.name)}</span></button>`).join('');
+    if(sheetGrid){
+      sheetGrid.innerHTML =
+        `<button class="sheet-cat" type="button" data-cat=""><span class="ci">${allIcon}</span><span class="lb">All products</span></button>` +
+        cats.map(c => `<button class="sheet-cat" type="button" data-cat="${esc(c.name)}"><span class="ci">${icon(c)}</span><span class="lb">${esc(c.name)}</span></button>`).join('');
+    }
+    document.querySelectorAll('.cat-chip, .sheet-cat').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        selectCategory(el.dataset.cat);
+        if(el.classList.contains('sheet-cat') && window.closeNavSheet) window.closeNavSheet();
+      });
+    });
+    syncChips();
+  }
+
+  function renderProducts(){
+    if(!productsCache.length) return;
     const rail = document.getElementById('dropsRail');
-    rail.innerHTML = data.map((p, i) => {
+    let list = productsCache.map((p, i) => ({ p, i }));
+
+    const q = shopState.q.trim().toLowerCase();
+    if(q){
+      list = list.filter(({p}) => (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q) || (p.badge || '').toLowerCase().includes(q));
+    }
+    if(shopState.cat){
+      const c = normCat(shopState.cat);
+      list = list.filter(({p}) => { const pc = normCat(p.category); return pc && (pc.includes(c) || c.includes(pc)); });
+    }
+    if(shopState.sort === 'low') list.sort((a,b) => Number(a.p.price || 0) - Number(b.p.price || 0));
+    else if(shopState.sort === 'high') list.sort((a,b) => Number(b.p.price || 0) - Number(a.p.price || 0));
+    else if(shopState.sort === 'discount') list.sort((a,b) => discountPct(b.p) - discountPct(a.p));
+    else if(shopState.sort === 'popular') list.sort((a,b) => Number(b.p.sold_count || 0) - Number(a.p.sold_count || 0));
+
+    const countEl = document.getElementById('shopResultCount');
+    if(countEl) countEl.textContent = list.length + (list.length === 1 ? ' product' : ' products');
+    const clr = document.getElementById('shopClear');
+    if(clr) clr.hidden = !(shopState.q || shopState.cat);
+
+    if(!list.length){
+      rail.innerHTML = `<div class="shop-empty"><h3>Nothing found</h3><p>Try a different word or category.</p><button type="button" id="shopEmptyReset">Show all products</button></div>`;
+      document.getElementById('shopEmptyReset').addEventListener('click', resetShopFilters);
+      return;
+    }
+
+    rail.innerHTML = list.map(({p, i}) => {
       const soldOut = p.stock_status === 'sold_out';
+      const off = discountPct(p);
+      const rating = Number(p.rating || 0);
+      const rc = Number(p.rating_count || 0);
+      const sold = Number(p.sold_count || 0);
       return `
-      <div class="drop-card ${soldOut ? 'is-sold-out' : ''}" data-idx="${i}" style="cursor:pointer;">
+      <div class="drop-card ${soldOut ? 'is-sold-out' : ''}" data-idx="${i}" data-id="${esc(String(p.id))}" role="link" tabindex="0" aria-label="${esc(p.name)}">
         <div class="drop-img">
           <img src="${esc(p.image_url) || 'https://images.unsplash.com/photo-1614632537190-23e4146777db?w=500&q=80'}" alt="${esc(p.name)}" loading="lazy" onerror="imgOnError.call(this)">
           ${p.badge && !soldOut ? `<div class="drop-tag">${esc(p.badge)}</div>` : ''}
           ${soldOut ? `<div class="sold-out-badge">SOLD OUT</div>` : ''}
+          ${off && !soldOut ? `<div class="dz-disc">-${off}%</div>` : ''}
         </div>
         <div class="drop-body">
-          <h3>${esc(p.name)}</h3>
-          <div class="price">${p.old_price ? `<span>${fmtPrice(p.old_price)}</span>` : ''}${fmtPrice(p.price)}</div>
-          <div class="drop-actions">
-            <button class="btn-cart" data-idx="${i}" ${soldOut ? 'disabled' : ''} onclick="event.stopPropagation(); addToCartByIdx(${i}, this);">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              <span>${soldOut ? 'Sold Out' : 'Add to Cart'}</span>
+          <h3 class="dz-name">${esc(p.name)}</h3>
+          <div class="dz-bottom">
+            <div>
+              <div class="dz-price">${fmtPrice(p.price)}</div>
+              ${off ? `<div class="dz-old-row"><s class="dz-old">${fmtPrice(p.old_price)}</s><b class="dz-off">-${off}%</b></div>` : ''}
+            </div>
+            <button class="dz-add" type="button" aria-label="Add to cart" ${soldOut ? 'disabled' : ''} onclick="event.stopPropagation(); addToCartByIdx(${i}, this);">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
           </div>
+          <div class="dz-meta">
+            ${rating ? `<span class="dz-rate"><span class="st">★</span>${rating.toFixed(1)}${rc ? ` <em>(${fmtCount(rc)})</em>` : ''}</span>` : ''}
+            ${sold ? `<span class="dz-sold">${fmtCount(sold)} sold</span>` : ''}
+          </div>
         </div>
-      </div>
-    `;
+      </div>`;
     }).join('');
 
     rail.querySelectorAll('.drop-card').forEach(card=>{
-      card.addEventListener('click', (e)=>{
-        if(e.target.closest('.btn-cart')) return;
-        openQuickView(productsCache[parseInt(card.dataset.idx)]);
-      });
+      const go = ()=>{ location.href = 'product.html?id=' + encodeURIComponent(card.dataset.id); };
+      card.addEventListener('click', (e)=>{ if(e.target.closest('.dz-add')) return; go(); });
+      card.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' && !e.target.closest('.dz-add')) go(); });
     });
+  }
+
+  function resetShopFilters(){
+    shopState.q = ''; shopState.cat = ''; shopState.sort = 'default';
+    const si = document.getElementById('shopSearchInput'); if(si) si.value = '';
+    const ss = document.getElementById('shopSort'); if(ss) ss.value = 'default';
+    syncChips();
+    renderProducts();
+  }
+
+  async function loadProducts(){
+    const { data, error } = await sb.from('products').select('*').order('sort_order', { ascending:true });
+    if(error || !data || !data.length) return;
+    productsCache = data;
+    renderProducts();
     updateCartBadge();
+    if(!urlParamsApplied){
+      urlParamsApplied = true;
+      if(window.applyShopUrlParams) window.applyShopUrlParams();
+    }
   }
 
   function openQuickView(p){
@@ -1831,9 +2153,9 @@
     if(btn){
       btn.classList.add('added');
       const lbl = btn.querySelector('span');
-      const prev = lbl.textContent;
-      lbl.textContent = 'Added ✓';
-      setTimeout(()=>{ btn.classList.remove('added'); lbl.textContent = prev; }, 1200);
+      const prev = lbl ? lbl.textContent : '';
+      if(lbl) lbl.textContent = 'Added ✓';
+      setTimeout(()=>{ btn.classList.remove('added'); if(lbl) lbl.textContent = prev; }, 1200);
     }
     openCart(true);
     renderCart();
@@ -1853,6 +2175,8 @@
     if(!badge) return;
     badge.textContent = n;
     badge.classList.toggle('zero', n===0);
+    const nb = document.getElementById('navCartBadge');
+    if(nb){ nb.textContent = n; nb.classList.toggle('zero', n===0); }
   }
   function renderCart(){
     const cart = getCart();
@@ -1909,6 +2233,12 @@
   });
   updateCartBadge();
 
+  function avatarBg(name){
+    let hsh = 0; const s = String(name || '');
+    for(let i = 0; i < s.length; i++) hsh = (hsh * 31 + s.charCodeAt(i)) % 360;
+    return 'linear-gradient(135deg,hsl(' + hsh + ',65%,45%),hsl(' + ((hsh + 40) % 360) + ',70%,55%))';
+  }
+
   async function loadReviews(){
     const { data, error } = await sb.from('reviews').select('*').order('sort_order', { ascending:true });
     if(error || !data || !data.length) return;
@@ -1919,7 +2249,7 @@
       <div class="t-card">
         <div class="t-stars">${'★'.repeat(r.rating || 5)}</div>
         <p class="quote">"${esc(r.review_text)}"</p>
-        <div class="t-person"><div class="t-avatar">${initials}</div><div><div class="name">${esc(r.name)}</div></div></div>
+        <div class="t-person"><div class="t-avatar"${r.avatar_url ? '' : ' style="background:' + avatarBg(r.name) + '"'}>${r.avatar_url ? `<img src="${esc(r.avatar_url)}" alt="${esc(r.name)}" loading="lazy" onerror="imgOnError.call(this)">` : initials}</div><div><div class="name">${esc(r.name)}</div></div></div>
       </div>`;
     }).join('');
 
@@ -2046,6 +2376,21 @@
         '\n[TOTAL:' + cartTotal + ']';
       orderDetails = orderDetails ? (orderDetails + '\n\n' + cartBlock) : cartBlock;
     }
+
+    // Delivery address + (optional) customer account link are packed into `details`
+    // with tags, the same way the cart block is — no new order columns needed.
+    const clean = (v) => String(v || '').replace(/[\[\]]/g, '').trim();
+    const addrText = [
+      ['Division', document.getElementById('addrDivision').value],
+      ['District', document.getElementById('addrDistrict').value],
+      ['Area', document.getElementById('addrArea').value],
+      ['Address', document.getElementById('addrFull').value],
+      ['Landmark', document.getElementById('addrLandmark').value]
+    ].filter(x => clean(x[1])).map(x => x[0] + ': ' + clean(x[1])).join('\n');
+    orderDetails = orderDetails.replace(/\[(\/?ADDRESS|CUSTOMER:[^\]]*)\]/gi, '');
+    if(addrText) orderDetails = (orderDetails ? orderDetails + '\n\n' : '') + '[ADDRESS]\n' + addrText + '\n[/ADDRESS]';
+    const custProfile = (window.SWAuth && SWAuth.isLoggedIn()) ? SWAuth.getProfile() : null;
+    if(custProfile && custProfile.id) orderDetails += '\n[CUSTOMER:' + custProfile.id + ']';
 
     const order = {
       name: document.getElementById('fname').value,
@@ -2448,6 +2793,161 @@
         .on('postgres_changes', { event:'UPDATE', schema:'public', table:'chat_sessions', filter:'id=eq.' + sessionId }, onSessionUpdate)
         .subscribe();
     }
+  })();
+</script>
+<script>
+  // ============================================
+  // DARAZ-STYLE WIRING: search, sort, bottom nav, sheets, URL params
+  // ============================================
+  (function(){
+    const URLP = new URLSearchParams(location.search);
+    const topbarEl = document.getElementById('topbar');
+
+    // keep the sticky search bar right under the header (header height changes on scroll)
+    function setTbH(){ document.documentElement.style.setProperty('--tb-h', topbarEl.offsetHeight + 'px'); }
+    setTbH();
+    if(window.ResizeObserver) new ResizeObserver(setTbH).observe(topbarEl);
+    window.addEventListener('resize', setTbH);
+
+    // search
+    const form = document.getElementById('shopSearchForm');
+    const input = document.getElementById('shopSearchInput');
+    let searchTimer = null;
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      shopState.q = input.value;
+      renderProducts();
+      scrollToShop();
+      input.blur();
+    });
+    input.addEventListener('input', ()=>{
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(()=>{ shopState.q = input.value; renderProducts(); }, 220);
+    });
+
+    // sort + clear
+    document.getElementById('shopSort').addEventListener('change', (e)=>{ shopState.sort = e.target.value; renderProducts(); });
+    document.getElementById('shopClear').addEventListener('click', resetShopFilters);
+
+    // "All" chip works even before categories load from the database
+    const firstChip = document.querySelector('#catChips .cat-chip');
+    if(firstChip && !firstChip.dataset.bound){
+      firstChip.dataset.bound = '1';
+      firstChip.addEventListener('click', ()=> selectCategory(''));
+    }
+
+    // bottom sheet
+    const ov = document.getElementById('navSheetOv');
+    const sheet = document.getElementById('navSheet');
+    const navBtns = { cats: document.getElementById('bnCats'), account: document.getElementById('bnAccount') };
+    function setActive(which){
+      document.querySelectorAll('#bottomNav .bn').forEach(b => b.classList.remove('active'));
+      const el = which === 'cats' ? navBtns.cats : which === 'account' ? navBtns.account : document.getElementById('bnHome');
+      el.classList.add('active');
+    }
+    function openSheet(which){
+      document.getElementById('sheetTitle').textContent = which === 'cats' ? 'Categories' : 'Account';
+      document.getElementById('sheetCats').style.display = which === 'cats' ? 'block' : 'none';
+      document.getElementById('sheetAccount').style.display = which === 'account' ? 'block' : 'none';
+      document.getElementById('sheetAcctCard').style.display = which === 'account' ? 'flex' : 'none';
+      if(which === 'account' && window.renderAcctCard) window.renderAcctCard();
+      if(which === 'account'){
+        const ig = document.getElementById('footInstagram');
+        if(ig) document.getElementById('sheetInstagram').href = ig.href;
+        const wf = document.getElementById('whatsappFab');
+        const waLink = document.getElementById('sheetWhatsapp');
+        const fw = document.getElementById('footWhatsapp');
+        let waHref = '';
+        if(wf && wf.style.display !== 'none' && wf.getAttribute('href') && wf.getAttribute('href') !== '#') waHref = wf.href;
+        else if(fw && fw.getAttribute('href') && fw.getAttribute('href') !== '#') waHref = fw.href;
+        waLink.style.display = waHref ? 'flex' : 'none';
+        if(waHref) waLink.href = waHref;
+      }
+      ov.classList.add('open');
+      sheet.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      setActive(which);
+    }
+    function closeSheet(){
+      ov.classList.remove('open');
+      sheet.classList.remove('open');
+      document.body.style.overflow = '';
+      setActive('home');
+    }
+    window.closeNavSheet = closeSheet;
+    navBtns.cats.addEventListener('click', ()=> openSheet('cats'));
+    navBtns.account.addEventListener('click', ()=> openSheet('account'));
+    document.getElementById('bnCart').addEventListener('click', ()=> openCart(false));
+    document.getElementById('bnHome').addEventListener('click', ()=>{ closeSheet(); });
+    document.getElementById('sheetClose').addEventListener('click', closeSheet);
+    ov.addEventListener('click', closeSheet);
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && sheet.classList.contains('open')) closeSheet(); });
+    document.getElementById('sheetOrder').addEventListener('click', closeSheet);
+    document.getElementById('sheetChat').addEventListener('click', ()=>{ closeSheet(); document.getElementById('chatFab').click(); });
+
+    // links coming from product.html (?search=  ?cat=  ?cart=1  ?checkout=1  ?chat=1)
+    window.applyShopUrlParams = function(){
+      const q = URLP.get('search'), cat = URLP.get('cat');
+      if(q){ shopState.q = q; input.value = q; }
+      if(cat){ shopState.cat = cat; }
+      if(q || cat){ syncChips(); renderProducts(); setTimeout(scrollToShop, 350); }
+    };
+
+    // ===== customer accounts + delivery address =====
+    const divSel = document.getElementById('addrDivision'), distSel = document.getElementById('addrDistrict');
+    const orderForm = document.getElementById('orderForm');
+    const acctBtn = document.getElementById('acctBtn');
+
+    window.renderAcctCard = function(){
+      const box = document.getElementById('sheetAcctCard');
+      if(!box || !window.SWAuth) return;
+      const c = SWAuth.isLoggedIn() ? SWAuth.getProfile() : null;
+      if(c){
+        box.innerHTML = '<div class="av">' + esc((c.name || '?').trim().charAt(0).toUpperCase()) + '</div><div><b>' + esc(c.name) + '</b><small>' + esc(c.phone) + '</small></div>' +
+          '<div class="acct-actions"><a class="primary" href="account.html">My account</a><button type="button" id="sheetLogout">Log out</button></div>';
+        document.getElementById('sheetLogout').addEventListener('click', async ()=>{ await SWAuth.logout(); closeSheet(); });
+      } else {
+        box.innerHTML = '<div class="av">?</div><div><b>Welcome</b><small>Log in to order faster and track orders</small></div>' +
+          '<div class="acct-actions"><a class="primary" href="account.html">Log in</a><a href="account.html#signup">Sign up</a></div>';
+      }
+    };
+
+    if(window.SWAuth){
+      SWAuth.setupGeo(divSel, distSel);
+      const prefillOrder = (force)=>{
+        const c = SWAuth.isLoggedIn() ? SWAuth.getProfile() : null;
+        if(!c) return;
+        const setIfEmpty = (id, v)=>{ const el = document.getElementById(id); if(el && v && (force || !el.value)) el.value = v; };
+        setIfEmpty('fname', c.name); setIfEmpty('phone', c.phone);
+        const a = c.address || {};
+        if(a.division && (force || !divSel.value)) SWAuth.setGeoValues(divSel, distSel, a.division, a.district);
+        setIfEmpty('addrArea', a.area); setIfEmpty('addrFull', a.full); setIfEmpty('addrLandmark', a.landmark);
+      };
+      orderForm.addEventListener('reset', ()=> setTimeout(()=> prefillOrder(true), 30));
+      SWAuth.onChange((c)=>{
+        const on = !!(c && SWAuth.isLoggedIn());
+        acctBtn.classList.toggle('on', on);
+        document.getElementById('orderAcctHint').innerHTML = on
+          ? 'Ordering as <b>' + esc(c.name) + '</b> &middot; <a href="account.html">My account</a>'
+          : 'Have an account? <a href="account.html">Log in</a> to fill your details automatically.';
+        if(on) prefillOrder(false);
+        window.renderAcctCard();
+      });
+      SWAuth.init(sb);
+    } else {
+      // sw-auth.js missing: keep ordering working with plain text boxes
+      [divSel, distSel].forEach(sel=>{
+        const inp = document.createElement('input');
+        inp.id = sel.id; inp.type = 'text'; inp.required = true;
+        inp.placeholder = sel === divSel ? 'Division' : 'District';
+        sel.parentNode.replaceChild(inp, sel);
+      });
+    }
+
+    if(URLP.get('cart') === '1') setTimeout(()=> openCart(false), 250);
+    if(URLP.get('checkout') === '1') setTimeout(()=>{ const b = document.getElementById('cartCheckout'); if(b) b.click(); }, 400);
+    if(URLP.get('chat') === '1') setTimeout(()=>{ const f = document.getElementById('chatFab'); if(f) f.click(); }, 500);
+    if(URLP.get('cart') || URLP.get('checkout') || URLP.get('chat')) history.replaceState(null, '', location.pathname);
   })();
 </script>
 </body>
